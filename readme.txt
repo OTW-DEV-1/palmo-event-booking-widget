@@ -3,7 +3,7 @@ Contributors: yarikkanonirov
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 0.4.0
+Stable tag: 0.4.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,20 @@ before switching it on.
 
 == Changelog ==
 
+= 0.4.1 =
+* Fixed two steps showing at once after a rejected submission. Keeping the step was
+  done by putting the classes back after Elementor had reset them, which left
+  Elementor's own idea of the current step disagreeing with the DOM. Elementor is now
+  stopped from resetting the steps at all, so the two never diverge.
+* Fixed the field clearing on sites with a "delay JavaScript" optimiser. The guard was
+  bound only if jQuery already existed, and this script deliberately loads ahead of a
+  delayed jQuery, so it silently never bound. It no longer needs jQuery.
+* Fixed Elementor's inline field error landing on top of the slot list. It is forced
+  back into the flow and shown above the date picker.
+* A rejected submission no longer costs the visitor the date and time they picked:
+  availability still refreshes, but the choice is carried across it.
+* Fixed the previous slot list staying on screen when the field was re-initialised.
+
 = 0.4.0 =
 * Added duplicate booking protection, matched on email address and/or phone number.
 * Added Delete to the bookings list: removes the row and frees the seat for good.
@@ -107,6 +121,10 @@ before switching it on.
 * Slot end times, scarcity display, and the multi-step summary.
 
 == Upgrade Notice ==
+
+= 0.4.1 =
+Bug fixes only, no database changes. Clear any page cache after upgrading: the assets are
+versioned by file modification time, but cached HTML still points at the previous ones.
 
 = 0.4.0 =
 Adds a column and two indexes to the bookings table, and backfills existing rows on the
