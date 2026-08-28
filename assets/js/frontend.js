@@ -178,6 +178,40 @@
 		var currentDateLabel = '';
 		var groups = config.revealFields ? laterGroups( field ) : [];
 
+		// Set by the post-submission refresh below: the date and slot the visitor
+		// had chosen, to be put back once the new availability arrives.
+		var restore = null;
+
+		if ( field.dataset.ebsRestore ) {
+			try {
+				restore = JSON.parse( field.dataset.ebsRestore );
+			} catch ( e ) {
+				restore = null;
+			}
+
+			delete field.dataset.ebsRestore;
+		}
+
+		/**
+		 * Re-checks a slot after a refresh. Silently does nothing when that slot has
+		 * since filled up or closed, which leaves the visitor on their date with
+		 * nothing selected -- the honest outcome, and the one the error was about.
+		 */
+		function reselect( slotId ) {
+			if ( ! slotId || ! /^\d+$/.test( String( slotId ) ) ) {
+				return;
+			}
+
+			var radio = slotBox.querySelector( '.ebs-slot-radio[value="' + slotId + '"]' );
+
+			if ( ! radio || radio.disabled ) {
+				return;
+			}
+
+			radio.checked = true;
+			radio.dispatchEvent( new Event( 'change', { bubbles: true } ) );
+		}
+
 		function reveal( show ) {
 			if ( groups.length ) {
 				setGroupsHidden( groups, ! show );
@@ -309,6 +343,13 @@
 		function renderDates() {
 			clear( dateSelect );
 
+			// Only renderSlots() used to empty this, so re-initialising the field left
+			// the previous times on screen: the date select showed its placeholder
+			// while the old list, and the old ticked slot, sat underneath it. The
+			// paths below that do select a date re-render it immediately.
+			clear( slotBox );
+			slotBox.hidden = true;
+
 			if ( ! dates.length ) {
 				dateSelect.appendChild( new Option( text( 'noDates', 'No dates are available right now.' ), '' ) );
 				dateSelect.disabled = true;
@@ -322,6 +363,21 @@
 			} );
 
 			dateSelect.disabled = false;
+
+			// Put the visitor back where they were after a post-submission refresh,
+			// so updated availability does not cost them their choice.
+			if ( restore && restore.date && findDate( restore.date ) ) {
+				var wantedDate = restore.date;
+				var wantedSlot = restore.slot;
+
+				restore = null;
+
+				dateSelect.value = wantedDate;
+				renderSlots( wantedDate );
+				reselect( wantedSlot );
+
+				return;
+			}
 
 			// With a single date there is nothing to choose, so open it straight away.
 			if ( dates.length === 1 ) {
@@ -677,17 +733,29 @@
 		}
 
 		setTimeout( function () {
-			// "Do not reset the form" means exactly that: rebuilding the slot list
-			// here would throw away the chosen time and re-hide the fields the
-			// choice revealed, undoing the option a moment after it worked. Only
-			// skipped once the send actually succeeded -- a rejected submission
-			// still needs fresh numbers, which is what this refresh is for.
+			// A successful send with "do not reset the form" on: nothing about the
+			// booking can have changed under the visitor, so leave the field exactly
+			// as they left it rather than rebuilding it under them.
 			if ( form.querySelector( '.ebs-slot-field[data-ebs-keep-step]' ) &&
 				form.querySelector( '.elementor-message-success' ) ) {
 				return;
 			}
 
 			form.querySelectorAll( '.ebs-slot-field' ).forEach( function ( field ) {
+				// A rejected submission does need fresh numbers -- someone may have
+				// taken the last seat. With "do not reset the form" on, the chosen
+				// date and time are carried across the rebuild, so the visitor gets
+				// the new availability without losing what they had picked.
+				if ( field.hasAttribute( 'data-ebs-keep-step' ) ) {
+					var chosen = field.querySelector( '.ebs-slot-radio:checked' );
+					var picked = field.querySelector( '[data-ebs-role="date"]' );
+
+					field.dataset.ebsRestore = JSON.stringify( {
+						date: picked ? picked.value : '',
+						slot: chosen ? chosen.value : ''
+					} );
+				}
+
 				field.dataset.ebsReady = '0';
 				initField( field );
 			} );

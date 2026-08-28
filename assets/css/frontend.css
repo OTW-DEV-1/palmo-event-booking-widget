@@ -201,3 +201,48 @@
 	outline: 2px solid rgba(70, 130, 250, .9);
 	outline-offset: -2px;
 }
+
+/* --- Elementor's inline field error inside the booking field ------------- */
+
+/*
+ * Elementor appends its per-field error into this wrapper, and themes routinely
+ * position that message absolutely -- which drops it on top of the slot list,
+ * overlapping a row and unreadable, instead of below the field.
+ *
+ * Forced back into normal flow and hoisted to the top of the field, so an error
+ * about the booking is the first thing read rather than something buried under
+ * a list that can be a dozen rows long.
+ *
+ * The !important flags are deliberate and narrow: they exist only to beat theme
+ * rules that are more specific than any selector scoped to this plugin can be,
+ * and they are confined to the positioning properties that cause the overlap.
+ */
+.ebs-slot-field {
+	display: flex;
+	flex-direction: column;
+}
+
+.ebs-slot-field > .elementor-message,
+.ebs-slot-field > .elementor-help-inline,
+.ebs-slot-field > .elementor-form-help-inline {
+	position: static !important;
+	inset: auto !important;
+	transform: none !important;
+	float: none !important;
+
+	/* Flex items default to order 0, so this alone lifts it above the date
+	   select and the slot list. */
+	order: -1;
+
+	display: block;
+	width: auto;
+	max-width: 100%;
+	margin: 0 0 12px;
+	padding: 10px 12px;
+	font-size: 1em;
+	line-height: 1.45;
+	text-align: start;
+	white-space: normal;
+	border-radius: 4px;
+	background: rgba(211, 47, 47, .09);
+}
