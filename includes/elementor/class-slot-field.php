@@ -410,7 +410,10 @@ class Slot_Field extends Field_Base {
 			return false;
 		}
 
-		$message = Duplicate_Guard::message( $existing, $contact );
+		// Wrapped so the frontend can recognise this particular error among any
+		// others Elementor renders, and move it somewhere it can actually be read.
+		// The message has already been through wp_kses; this wrapper is ours.
+		$message = '<span class="ebs-duplicate-error">' . Duplicate_Guard::message( $existing, $contact ) . '</span>';
 
 		// add_error() only, deliberately. Form_Record::validate() aborts on a
 		// non-empty $ajax_handler->errors, and Elementor then appends its own

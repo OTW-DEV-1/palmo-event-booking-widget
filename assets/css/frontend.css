@@ -246,3 +246,48 @@
 	border-radius: 4px;
 	background: rgba(211, 47, 47, .09);
 }
+
+/*
+ * The duplicate-booking message, once it has been moved below the chosen date
+ * and time. It is Elementor's own error element, so it arrives carrying styles
+ * meant for a hint tucked under a single input: cramped, sometimes absolutely
+ * positioned, and only as wide as its column. Reset to a plain full-width block.
+ *
+ * The !important flags are confined to the properties a theme is likely to have
+ * set on the inline-help element, which no plugin-scoped selector can outweigh.
+ */
+.ebs-duplicate-notice {
+	position: static !important;
+	inset: auto !important;
+	transform: none !important;
+	float: none !important;
+
+	display: block !important;
+	width: 100%;
+	max-width: 100%;
+	box-sizing: border-box;
+	margin: 0 0 16px;
+	padding: 12px 14px;
+
+	font-size: 1em;
+	font-weight: 500;
+	line-height: 1.5;
+	text-align: start;
+	white-space: normal;
+
+	color: #8a1f1f;
+	background: rgba(211, 47, 47, .1);
+	border-inline-start: 3px solid #d32f2f;
+	border-radius: 4px;
+}
+
+/* Elementor's own error colour would otherwise win inside the block. */
+.ebs-duplicate-notice .ebs-duplicate-error {
+	color: inherit;
+	font: inherit;
+}
+
+.ebs-duplicate-notice a {
+	color: inherit;
+	text-decoration: underline;
+}

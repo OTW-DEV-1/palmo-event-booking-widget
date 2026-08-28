@@ -3,7 +3,7 @@ Contributors: yarikkanonirov
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 0.4.2
+Stable tag: 0.4.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -94,6 +94,13 @@ before switching it on.
 
 == Changelog ==
 
+= 0.4.3 =
+* The duplicate message is now shown as a full-width notice below the chosen date
+  and time, instead of being squeezed under the email input. It still has to be
+  reported against that field -- that is what keeps a multi-step form on the step
+  the visitor is on -- so the element is moved after Elementor renders it. Ordinary
+  field errors are untouched and stay beside their own field.
+
 = 0.4.2 =
 * A duplicate rejection is now reported against the email or phone field that
   actually matched, instead of the booking field. Elementor sends a rejected
@@ -140,6 +147,9 @@ before switching it on.
 * Slot end times, scarcity display, and the multi-step summary.
 
 == Upgrade Notice ==
+
+= 0.4.3 =
+Presentation only, no database changes. Clear any page cache after upgrading.
 
 = 0.4.2 =
 Bug fixes only, no database changes. Clear any page cache after upgrading.

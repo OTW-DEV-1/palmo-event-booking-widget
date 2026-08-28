@@ -654,6 +654,58 @@
 	}
 
 	/**
+	 * Moves the duplicate-booking message below the chosen date and time.
+	 *
+	 * The error has to be reported against the email or phone field, because that
+	 * is what keeps Elementor on the step the visitor is already on. But those
+	 * fields usually sit side by side in a narrow column, so Elementor's own
+	 * placement squeezes a full sentence under one input. The element is therefore
+	 * rendered where Elementor puts it and then moved here, which changes nothing
+	 * about the step logic.
+	 *
+	 * Only ever moves our own message: it is found by the wrapper the server adds,
+	 * so ordinary field errors stay beside the field they belong to.
+	 */
+	function placeDuplicateNotice( form ) {
+		var marker = form.querySelector( '.ebs-duplicate-error' );
+
+		if ( ! marker ) {
+			return;
+		}
+
+		var notice = marker.closest( '.elementor-form-help-inline' ) || marker.parentNode;
+
+		if ( ! notice || notice.dataset.ebsPlaced === '1' ) {
+			return;
+		}
+
+		var step = notice.closest( STEP.wrapper );
+		var summary = step ? step.querySelector( '.ebs-summary' ) : null;
+
+		if ( summary && summary.parentNode ) {
+			summary.parentNode.insertBefore( notice, summary.nextSibling );
+		} else if ( step ) {
+			step.insertBefore( notice, step.firstChild );
+		} else {
+			// Single-step form: put it above the whole field list instead.
+			var field = form.querySelector( '.ebs-slot-field' );
+			var group = field ? field.closest( '.elementor-field-group' ) : null;
+
+			if ( ! group || ! group.parentNode ) {
+				return;
+			}
+
+			group.parentNode.insertBefore( notice, group );
+		}
+
+		notice.classList.add( 'ebs-duplicate-notice' );
+
+		// Moving the node is itself a mutation, so without this the observer would
+		// call straight back in.
+		notice.dataset.ebsPlaced = '1';
+	}
+
+	/**
 	 * Watches for Elementor's response landing: the success or error message, or an
 	 * inline field error. Used to run the safety net, and to apply the fallback
 	 * restore when the reset could not be unhooked.
@@ -679,6 +731,8 @@
 			if ( ! landed ) {
 				return;
 			}
+
+			placeDuplicateNotice( form );
 
 			var index = stepAtSubmit.get( form );
 
