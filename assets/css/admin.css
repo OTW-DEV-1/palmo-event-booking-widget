@@ -1,0 +1,326 @@
+.ebs-syntax {
+	margin-top: 12px;
+	padding: 12px 16px;
+	background: #f6f7f7;
+	border-left: 4px solid #2271b1;
+}
+
+.ebs-syntax ul {
+	margin: 8px 0;
+	list-style: disc;
+	padding-left: 20px;
+}
+
+.ebs-syntax code {
+	background: #fff;
+	padding: 1px 5px;
+}
+
+.ebs-slot-table td,
+.ebs-slot-table th {
+	vertical-align: middle;
+}
+
+.ebs-slot-table tr.ebs-is-full td {
+	background: #fcf0f1;
+}
+
+.ebs-pill {
+	display: inline-block;
+	padding: 1px 8px;
+	border-radius: 10px;
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 18px;
+	text-transform: uppercase;
+	letter-spacing: .02em;
+}
+
+.ebs-pill-open {
+	background: #edfaef;
+	color: #00713b;
+}
+
+.ebs-pill-full {
+	background: #fcf0f1;
+	color: #b32d2e;
+}
+
+.ebs-pill-closed {
+	background: #f0f0f1;
+	color: #646970;
+}
+
+/* --- calendar editor ---------------------------------------------------- */
+
+.ebs-editor-layout {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 24px;
+	align-items: flex-start;
+}
+
+.ebs-cal {
+	flex: 0 0 300px;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	background: #fff;
+	padding: 10px;
+}
+
+.ebs-cal-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 8px;
+}
+
+.ebs-cal-title {
+	font-weight: 600;
+	font-size: 14px;
+}
+
+.ebs-cal-nav {
+	min-width: 30px;
+	padding: 0 8px !important;
+	line-height: 26px !important;
+}
+
+.ebs-cal-grid {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	gap: 2px;
+}
+
+.ebs-cal-dow {
+	text-align: center;
+	font-size: 11px;
+	font-weight: 600;
+	color: #646970;
+	padding-bottom: 4px;
+}
+
+.ebs-cal-day {
+	position: relative;
+	aspect-ratio: 1 / 1;
+	border: 1px solid transparent;
+	border-radius: 3px;
+	background: #f6f7f7;
+	cursor: pointer;
+	font-size: 13px;
+	color: #1d2327;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+}
+
+.ebs-cal-day:hover:not(.ebs-is-empty) {
+	border-color: #2271b1;
+}
+
+.ebs-cal-day.ebs-is-empty {
+	background: transparent;
+	cursor: default;
+}
+
+.ebs-cal-day.ebs-is-past {
+	opacity: .5;
+}
+
+.ebs-cal-day.ebs-is-today {
+	font-weight: 700;
+	box-shadow: inset 0 0 0 1px #dba617;
+}
+
+.ebs-cal-day.ebs-has-slots {
+	background: #edfaef;
+	color: #00713b;
+	font-weight: 600;
+}
+
+.ebs-cal-day.ebs-is-selected {
+	background: #2271b1;
+	border-color: #2271b1;
+	color: #fff;
+}
+
+.ebs-cal-badge {
+	position: absolute;
+	top: 1px;
+	right: 2px;
+	font-size: 9px;
+	line-height: 1;
+	background: #00713b;
+	color: #fff;
+	border-radius: 6px;
+	padding: 2px 4px;
+}
+
+.ebs-cal-day.ebs-is-selected .ebs-cal-badge {
+	background: #fff;
+	color: #2271b1;
+}
+
+/* day panel */
+
+.ebs-day {
+	flex: 1 1 420px;
+	min-width: 0;
+}
+
+.ebs-day-title {
+	margin: 0 0 10px;
+	font-size: 14px;
+}
+
+.ebs-day-empty {
+	color: #646970;
+	font-style: italic;
+	margin: 0 0 12px;
+}
+
+.ebs-day-table {
+	margin-bottom: 14px;
+}
+
+.ebs-day-table th,
+.ebs-day-table td {
+	padding: 6px 8px;
+	vertical-align: middle;
+}
+
+.ebs-day-table td:last-child {
+	text-align: right;
+}
+
+.ebs-time-input {
+	width: 110px;
+}
+
+.ebs-hint {
+	color: #646970;
+	font-size: 12px;
+}
+
+.ebs-remove {
+	color: #b32d2e !important;
+}
+
+.ebs-day-actions > .ebs-action-row + .ebs-action-bulk {
+	margin-top: 10px;
+	padding-top: 10px;
+	border-top: 1px solid #dcdcde;
+}
+
+.ebs-action-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: 10px;
+	margin-bottom: 8px;
+}
+
+.ebs-action-heading {
+	display: block;
+	width: 100%;
+	font-size: 12px;
+	text-transform: uppercase;
+	letter-spacing: .03em;
+	color: #646970;
+	margin-bottom: 4px;
+}
+
+.ebs-labelled {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	font-size: 12px;
+}
+
+.ebs-labelled-text {
+	color: #646970;
+}
+
+.ebs-action-tail {
+	margin-top: 10px;
+	padding-top: 10px;
+	border-top: 1px solid #dcdcde;
+	align-items: center;
+}
+
+.ebs-clear {
+	margin-left: auto !important;
+}
+
+.ebs-unsaved {
+	display: none;
+	margin: 12px 0 0;
+	padding: 6px 10px;
+	background: #fcf9e8;
+	border-left: 3px solid #dba617;
+	font-size: 12px;
+}
+
+.ebs-unsaved.ebs-is-visible {
+	display: block;
+}
+
+.ebs-advanced {
+	margin-top: 18px;
+	padding-top: 12px;
+	border-top: 1px solid #dcdcde;
+}
+
+.ebs-advanced summary {
+	cursor: pointer;
+	font-weight: 600;
+	color: #2271b1;
+}
+
+.ebs-editor-loading {
+	color: #646970;
+	font-style: italic;
+}
+
+.ebs-default-cap {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+	margin: 0 0 14px;
+}
+
+.ebs-labelled-field {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	white-space: nowrap;
+}
+
+.ebs-labelled-suffix {
+	color: #646970;
+	font-size: 12px;
+}
+
+.ebs-default-cap label + input {
+	margin-right: 4px;
+}
+
+.ebs-default-cap label:not(:first-child) {
+	margin-left: 12px;
+}
+
+/* Destructive action in the bookings list. Scoped to the button so it cannot
+   restyle anything else in the admin. */
+.ebs-delete {
+	color: #b32d2e;
+	border-color: #b32d2e;
+}
+
+.ebs-delete:hover,
+.ebs-delete:focus {
+	color: #fff;
+	background: #b32d2e;
+	border-color: #b32d2e;
+}

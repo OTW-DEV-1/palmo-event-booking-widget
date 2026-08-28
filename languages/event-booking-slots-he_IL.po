@@ -1,0 +1,65 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Event Booking Slots 0.4.0\n"
+"Language: he_IL\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+# --- what the visitor sees -------------------------------------------------
+
+msgid "Loading…"
+msgstr "טוען…"
+
+msgid "Choose a date"
+msgstr "בחירת תאריך"
+
+msgid "Choose a time"
+msgstr "בחירת שעה"
+
+msgid "No dates are available right now."
+msgstr "אין תאריכים זמינים כרגע."
+
+msgid "Could not load the available dates. Please refresh the page."
+msgstr "לא ניתן לטעון את התאריכים הזמינים. יש לרענן את העמוד."
+
+msgid "Full"
+msgstr "מלא"
+
+msgid "%d places left"
+msgstr "נותרו %d מקומות"
+
+msgid "Your chosen time"
+msgstr "המועד שנבחר"
+
+# --- validation messages ---------------------------------------------------
+
+msgid "Please choose a date and time."
+msgstr "יש לבחור תאריך ושעה."
+
+msgid "Sorry, that time slot just filled up. Please choose another one."
+msgstr "המועד שנבחר התמלא זה עתה. יש לבחור מועד אחר."
+
+msgid "That time slot no longer exists. Please pick another one."
+msgstr "המועד שנבחר כבר אינו קיים. יש לבחור מועד אחר."
+
+msgid "That time slot is closed. Please pick another one."
+msgstr "המועד שנבחר סגור להרשמה. יש לבחור מועד אחר."
+
+msgid "That time slot is not part of this booking."
+msgstr "המועד שנבחר אינו שייך להרשמה זו."
+
+# --- editor labels ---------------------------------------------------------
+
+msgid "Booking Slot"
+msgstr "מועד הרשמה"
+
+msgid "Booking event"
+msgstr "אירוע"
+
+msgid "Places left"
+msgstr "מקומות שנותרו"
+
+msgid "You already have a booking for this event. Please contact us if you need to change it."
+msgstr "קיימת כבר הרשמה לאירוע זה. ניתן לפנות אלינו אם יש צורך לעדכן אותה."

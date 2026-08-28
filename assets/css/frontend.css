@@ -1,0 +1,203 @@
+.ebs-slot-field {
+	width: 100%;
+}
+
+.ebs-slot-field .ebs-date-select {
+	width: 100%;
+}
+
+.ebs-slot-field select:disabled {
+	opacity: .6;
+	cursor: not-allowed;
+}
+
+/* --- slot table ------------------------------------------------------- */
+
+.ebs-slots {
+	margin-top: 12px;
+}
+
+.ebs-slots[hidden] {
+	display: none;
+}
+
+.ebs-slots-heading {
+	margin: 0 0 6px;
+	font-weight: 600;
+	font-size: .95em;
+}
+
+.ebs-slots-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: .95em;
+}
+
+.ebs-slots-table td {
+	padding: 10px 12px;
+	text-align: start;
+	border-bottom: 1px solid rgba(128, 128, 128, .25);
+	vertical-align: middle;
+}
+
+.ebs-col-pick {
+	width: 1%;
+	white-space: nowrap;
+}
+
+.ebs-col-time {
+	display: flex;
+	align-items: baseline;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+.ebs-slot-row {
+	cursor: pointer;
+	transition: background-color .12s ease;
+}
+
+.ebs-slot-row:hover:not(.ebs-is-full) {
+	background: rgba(128, 128, 128, .08);
+}
+
+.ebs-slot-row.ebs-is-selected {
+	background: rgba(70, 130, 250, .12);
+}
+
+.ebs-slot-row.ebs-is-selected .ebs-time {
+	font-weight: 700;
+}
+
+.ebs-slot-row.ebs-is-full {
+	opacity: .55;
+	cursor: not-allowed;
+}
+
+.ebs-slot-row label {
+	cursor: inherit;
+	display: inline-block;
+	margin: 0;
+}
+
+.ebs-slot-radio {
+	margin: 0;
+	cursor: inherit;
+}
+
+/* The places-left count sits beside the time, not in its own column. */
+.ebs-left {
+	color: #d0021b;
+	font-weight: 600;
+	font-size: .85em;
+	white-space: nowrap;
+}
+
+.ebs-left.ebs-is-full-tag {
+	color: #8a8a8a;
+	font-weight: 500;
+}
+
+.ebs-slots-heading {
+	margin: 0 0 6px;
+	font-weight: 600;
+	font-size: .95em;
+}
+
+/* --- progressive reveal ----------------------------------------------- */
+
+.elementor-field-group.ebs-hidden-until-slot {
+	display: none !important;
+}
+
+/* --- messages --------------------------------------------------------- */
+
+.ebs-slot-message {
+	margin: 8px 0 0;
+	font-size: .9em;
+	line-height: 1.4;
+}
+
+.ebs-slot-message:empty {
+	display: none;
+}
+
+.ebs-slot-message.ebs-is-error {
+	color: #b32d2e;
+}
+
+.ebs-notice {
+	padding: 8px 12px;
+	border-radius: 3px;
+	font-size: .9em;
+}
+
+.ebs-notice-error {
+	background: #fcf0f1;
+	border-left: 3px solid #b32d2e;
+	color: #b32d2e;
+}
+
+/* --- chosen-slot summary on the following step ------------------------- */
+
+.ebs-summary {
+	width: 100%;
+	display: flex;
+	align-items: baseline;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-bottom: 16px;
+	padding: 10px 14px;
+	border-radius: 4px;
+	background: rgba(128, 128, 128, .10);
+	border-inline-start: 3px solid currentColor;
+}
+
+.ebs-summary-label {
+	font-size: .85em;
+	opacity: .75;
+}
+
+.ebs-summary-value {
+	font-size: 1.05em;
+	font-weight: 700;
+}
+
+/* --- "Hide the radio circle" -------------------------------------------- */
+
+/* The input is clipped to a point rather than removed: display:none would take
+   it out of the render tree, and a required control the browser cannot render
+   is a control it cannot focus to report a validation failure -- which shows up
+   as a form that refuses to submit with no visible reason. */
+.ebs-no-radio .ebs-slot-radio {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: 0;
+	padding: 0;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.ebs-no-radio .ebs-col-time {
+	position: relative;
+}
+
+/* With no tick to read, selection has to carry on colour and weight alone, so
+   it gets a stronger fill and an edge marker. Logical property, so the marker
+   lands on the correct side in an RTL page. */
+.ebs-no-radio .ebs-slot-row.ebs-is-selected {
+	background: rgba(70, 130, 250, .16);
+}
+
+.ebs-no-radio .ebs-slot-row.ebs-is-selected .ebs-col-time {
+	border-inline-start: 3px solid rgba(70, 130, 250, .9);
+	padding-inline-start: 9px;
+}
+
+/* The clipped input takes its focus ring with it, so the row shows it instead
+   and the list stays keyboard-navigable. */
+.ebs-no-radio .ebs-slot-row:focus-within {
+	outline: 2px solid rgba(70, 130, 250, .9);
+	outline-offset: -2px;
+}

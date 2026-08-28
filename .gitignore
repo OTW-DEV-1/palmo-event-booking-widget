@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Build output and archives
+*.zip
+build/
+dist/
+
+# Logs
+*.log
