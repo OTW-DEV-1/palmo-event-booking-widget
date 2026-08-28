@@ -3,7 +3,7 @@ Contributors: yarikkanonirov
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 0.4.1
+Stable tag: 0.4.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -71,8 +71,14 @@ The **Do not reset the form after sending** option on the Booking Slot field pre
 both. It only applies to forms containing a Booking Slot field; every other form on
 the site keeps Elementor's normal behaviour.
 
-A rejected submission is left alone: Elementor moves to whichever step holds the
-invalid field, and the slot list is refreshed so the visitor sees current availability.
+A rejected submission keeps the visitor where they are too. Elementor moves a rejected
+form to the step holding the invalid field, so a duplicate is reported against the email
+or phone that matched rather than against the booking field on the first step -- being
+sent back to the beginning to be told your email is already used helps nobody.
+
+The slot list is still refreshed after a rejection, in case somebody took the last seat
+while the visitor was typing, but the date and time they had chosen are carried across
+that refresh. A slot that has since filled up simply comes back unselected.
 
 == Requirements ==
 
@@ -87,6 +93,19 @@ but it is still not the real availability. Check your local consumer-protection 
 before switching it on.
 
 == Changelog ==
+
+= 0.4.2 =
+* A duplicate rejection is now reported against the email or phone field that
+  actually matched, instead of the booking field. Elementor sends a rejected
+  multi-step form to the step holding the invalid field, and the booking field is
+  on the first step -- so the visitor was thrown back to the beginning to be told
+  their email was already used.
+* Fixed being unable to move forward again after that. Elementor's goToStep()
+  moves the form without updating its own step counter, so the jump left the
+  counter pointing at the step the visitor had been on; the next "Next" then asked
+  for a step past the end and the form went blank. Reporting the error on the step
+  the visitor is already on means Elementor never moves, and never drifts.
+* Added a recovery for a form left showing no step at all, whatever caused it.
 
 = 0.4.1 =
 * Fixed two steps showing at once after a rejected submission. Keeping the step was
@@ -121,6 +140,9 @@ before switching it on.
 * Slot end times, scarcity display, and the multi-step summary.
 
 == Upgrade Notice ==
+
+= 0.4.2 =
+Bug fixes only, no database changes. Clear any page cache after upgrading.
 
 = 0.4.1 =
 Bug fixes only, no database changes. Clear any page cache after upgrading: the assets are

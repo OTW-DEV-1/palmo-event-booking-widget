@@ -624,7 +624,8 @@
 			}
 		} );
 
-		if ( shown.length < 2 ) {
+		// Exactly one visible is the only healthy state; leave it alone.
+		if ( shown.length === 1 ) {
 			return;
 		}
 
@@ -639,7 +640,10 @@
 		} );
 
 		if ( target < 0 ) {
-			target = shown[ shown.length - 1 ];
+			// Nothing visible at all means Elementor was asked for a step past the
+			// end and hid the current one on the way. Falling back to the first step
+			// is arbitrary but recoverable; leaving the form blank is not.
+			target = shown.length ? shown[ shown.length - 1 ] : 0;
 		}
 
 		steps.forEach( function ( step, i ) {
@@ -689,6 +693,22 @@
 			normaliseSteps( form );
 		} ).observe( form, { childList: true, subtree: true } );
 	}
+
+	// Elementor's step buttons can leave the form showing nothing at all when its
+	// internal counter and the visible step have drifted apart. Checked after the
+	// click so the recovery runs on whatever state the button left behind.
+	document.addEventListener( 'click', function ( event ) {
+		var button = event.target.closest ? event.target.closest( '.e-form__buttons__wrapper__button' ) : null;
+		var form = button ? button.closest( 'form.elementor-form' ) : null;
+
+		if ( ! form || ! keepsStep( form ) ) {
+			return;
+		}
+
+		setTimeout( function () {
+			normaliseSteps( form );
+		}, 0 );
+	} );
 
 	document.addEventListener( 'submit', function ( event ) {
 		var form = event.target;

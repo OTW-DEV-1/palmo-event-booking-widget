@@ -418,7 +418,7 @@ class Slot_Field extends Field_Base {
 		// as well would show the visitor two copies of it, ours followed by
 		// "An error occurred". The field-level message is rendered as HTML, which
 		// is why Settings restricts it with wp_kses.
-		$ajax_handler->add_error( $field_id, $message );
+		$ajax_handler->add_error( self::error_target( $field_id, $existing, $contact ), $message );
 
 		/**
 		 * Fires when a submission is turned away as a duplicate.
@@ -430,6 +430,43 @@ class Slot_Field extends Field_Base {
 		do_action( 'ebs_duplicate_rejected', $existing, $contact, (int) $event_id );
 
 		return true;
+	}
+
+	/**
+	 * Which field a duplicate rejection should be reported against.
+	 *
+	 * Not the booking slot field, even though that is the field doing the checking.
+	 * Elementor puts a rejected multi-step form on the step holding the invalid
+	 * field, and the slot field is on the first step -- so reporting it there threw
+	 * the visitor back to the beginning to be told their email was already used.
+	 *
+	 * Worse, Elementor's goToStep() moves the form without updating its own
+	 * currentStep, so that jump also left the counter pointing at the step they had
+	 * been on: the next "Next" click then asked for a step one past the end and the
+	 * form went blank. Reporting against the email or phone field -- the value that
+	 * actually matched, and one the visitor can edit -- keeps them where they are,
+	 * so Elementor never moves and never desynchronises.
+	 *
+	 * Falls back to the slot field when the form has no recognisable contact field,
+	 * which is the old behaviour and still better than losing the message.
+	 *
+	 * @param string      $field_id Our own field id.
+	 * @param object      $existing The booking already on file.
+	 * @param array       $contact  name / email / phone, plus their field ids.
+	 */
+	private static function error_target( $field_id, $existing, array $contact ) {
+		$ids = isset( $contact['ids'] ) && is_array( $contact['ids'] ) ? $contact['ids'] : array();
+
+		$matched = Duplicate_Guard::matched_field( $existing, $contact );
+
+		// The field that actually matched, then either contact field, then ours.
+		foreach ( array( $matched, 'email', 'phone' ) as $key ) {
+			if ( $key && ! empty( $ids[ $key ] ) ) {
+				return $ids[ $key ];
+			}
+		}
+
+		return $field_id;
 	}
 
 	/**

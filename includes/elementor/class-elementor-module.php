@@ -185,15 +185,40 @@ class Elementor_Module {
 	 * the two always look at the same values -- otherwise a form could be blocked
 	 * on an email that never made it into the stored row.
 	 *
+	 * The ids come back alongside the values because a validation error has to be
+	 * attached to the field it is about. In a multi-step form that choice also
+	 * decides which step Elementor jumps to when the submission is rejected.
+	 *
 	 * @param array<string,array> $fields Form_Record::get( 'fields' ).
-	 * @return array{name:string,email:string,phone:string}
+	 * @return array{name:string,email:string,phone:string,ids:array<string,string>}
 	 */
 	public static function contact_from_fields( array $fields ) {
-		return array(
-			'name'  => self::guess( $fields, array( 'text' ), array( 'name', 'שם', 'full name', 'fullname' ) ),
-			'email' => self::guess( $fields, array( 'email' ), array( 'email', 'mail', 'אימייל' ) ),
-			'phone' => self::guess( $fields, array( 'tel' ), array( 'phone', 'tel', 'mobile', 'טלפון' ) ),
+		$ids = array(
+			'name'  => self::guess_id( $fields, array( 'text' ), array( 'name', 'שם', 'full name', 'fullname' ) ),
+			'email' => self::guess_id( $fields, array( 'email' ), array( 'email', 'mail', 'אימייל' ) ),
+			'phone' => self::guess_id( $fields, array( 'tel' ), array( 'phone', 'tel', 'mobile', 'טלפון' ) ),
 		);
+
+		$out = array( 'ids' => $ids );
+
+		foreach ( $ids as $key => $id ) {
+			$out[ $key ] = '' === $id ? '' : self::field_value( $fields, $id );
+		}
+
+		return $out;
+	}
+
+	/**
+	 * @param array<string,array> $fields
+	 */
+	private static function field_value( array $fields, $id ) {
+		if ( ! isset( $fields[ $id ]['value'] ) ) {
+			return '';
+		}
+
+		$value = $fields[ $id ]['value'];
+
+		return is_array( $value ) ? implode( ', ', $value ) : (string) $value;
 	}
 
 	/**
@@ -201,10 +226,10 @@ class Elementor_Module {
 	 * table has readable columns. The full submission is kept in payload either
 	 * way, so a miss here loses nothing.
 	 */
-	private static function guess( array $fields, array $types, array $keywords ) {
-		foreach ( $fields as $field ) {
+	private static function guess_id( array $fields, array $types, array $keywords ) {
+		foreach ( $fields as $id => $field ) {
 			if ( in_array( $field['type'], $types, true ) && ! empty( $field['value'] ) ) {
-				return is_array( $field['value'] ) ? implode( ', ', $field['value'] ) : $field['value'];
+				return (string) $id;
 			}
 		}
 
@@ -213,7 +238,7 @@ class Elementor_Module {
 
 			foreach ( $keywords as $keyword ) {
 				if ( false !== strpos( $haystack, strtolower( $keyword ) ) && ! empty( $field['value'] ) ) {
-					return is_array( $field['value'] ) ? implode( ', ', $field['value'] ) : $field['value'];
+					return (string) $id;
 				}
 			}
 		}

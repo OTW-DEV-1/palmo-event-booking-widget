@@ -113,6 +113,38 @@ class Duplicate_Guard {
 	}
 
 	/**
+	 * Which of the two values the existing booking was actually matched on.
+	 *
+	 * Used to put the error on the input the visitor can do something about, and,
+	 * in a multi-step form, to keep Elementor on the step that input lives on.
+	 *
+	 * @param object|null $existing
+	 * @param array{email?:string,phone?:string} $contact
+	 * @return string 'email', 'phone', or '' when neither can be attributed.
+	 */
+	public static function matched_field( $existing, array $contact ): string {
+		if ( ! $existing ) {
+			return '';
+		}
+
+		$email = isset( $contact['email'] ) ? self::normalize_email( (string) $contact['email'] ) : '';
+
+		if ( '' !== $email && ! empty( Settings::get( 'duplicate_email' ) ) &&
+			$email === self::normalize_email( (string) ( $existing->email ?? '' ) ) ) {
+			return 'email';
+		}
+
+		$phone = isset( $contact['phone'] ) ? self::normalize_phone( (string) $contact['phone'] ) : '';
+
+		if ( '' !== $phone && ! empty( Settings::get( 'duplicate_phone' ) ) &&
+			$phone === self::normalize_phone( (string) ( $existing->phone ?? '' ) ) ) {
+			return 'phone';
+		}
+
+		return '';
+	}
+
+	/**
 	 * The configured message with its placeholders filled in.
 	 *
 	 * Values are escaped individually before substitution, so a name containing
