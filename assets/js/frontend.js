@@ -388,24 +388,31 @@
 	/**
 	 * Stops Elementor emptying the fields once a submission succeeds.
 	 *
-	 * Elementor clears the form with jQuery's $form.trigger( 'reset' ). That runs
-	 * the jQuery handlers and only then calls the element's own reset() -- and it
-	 * skips that call if a handler prevented the default. So preventing it here is
-	 * enough, and it is the only thing that is: trigger() never dispatches a native
-	 * reset event, so addEventListener( 'reset', ... ) is never called at all and
-	 * cannot stop anything. jQuery is a hard dependency of Elementor Pro's own form
-	 * script, so it is always present wherever this field can appear.
+	 * Elementor clears the form with jQuery's $form.trigger( 'reset' ), which runs
+	 * the jQuery handlers and then calls the element's own reset(). That native
+	 * reset() fires a real, cancellable `reset` event of its own -- so cancelling
+	 * that event stops the clearing, whichever route asked for it: jQuery's
+	 * trigger, a direct form.reset(), or a plain reset button.
 	 *
-	 * preventDefault() rather than returning false, which would also stop the event
-	 * reaching anything else listening further up.
+	 * Deliberately native rather than a jQuery handler. This script opts out of
+	 * "delay JavaScript" optimisers (WP Rocket and friends) so the availability
+	 * fetch is not held back, which means it can run BEFORE a delayed jQuery
+	 * exists -- and a `if ( window.jQuery )` binding at load time would then
+	 * silently never happen. Nothing here needs jQuery at all.
+	 *
+	 * Capture phase so it is reached before anything on the form can stop the
+	 * event travelling, and preventDefault() rather than returning false, which
+	 * would also stop it reaching whatever else is listening.
 	 */
-	if ( window.jQuery ) {
-		window.jQuery( document ).on( 'reset', 'form.elementor-form', function ( event ) {
-			if ( this.querySelector( '.ebs-slot-field[data-ebs-keep-step]' ) ) {
-				event.preventDefault();
-			}
-		} );
-	}
+	document.addEventListener( 'reset', function ( event ) {
+		var form = event.target;
+
+		if ( ! form || ! form.querySelector || ! keepsStep( form ) ) {
+			return;
+		}
+
+		event.preventDefault();
+	}, true );
 
 	/* --- ... and the multi-step half of the same option ------------------- */
 
@@ -415,10 +422,14 @@
 		indicator: '.e-form__indicators__indicator',
 		state:     'e-form__indicators__indicator--state-',
 		meter:     '.e-form__indicators__indicator__progress__meter',
-		cssVar:    '--e-form-steps-indicator-progress-meter-width'
+		cssVar:    '--e-form-steps-indicator-progress-meter-width',
+		inlineErr: '.elementor-form-help-inline'
 	};
 
-	// Which step each form was showing when it was submitted.
+	// Forms whose step reset has already been unhooked.
+	var resetDetached = new WeakSet();
+
+	// Fallback only: the step a form was showing when it was submitted.
 	var stepAtSubmit = new WeakMap();
 	var watchedForms = new WeakSet();
 
@@ -440,11 +451,85 @@
 	}
 
 	/**
-	 * Puts the form back on the step it was showing, and brings the indicators and
-	 * the progress bar along so the header does not contradict the body.
+	 * Unhooks Elementor's own "back to step one" handler for this form.
 	 *
-	 * Every lookup is guarded: if a future Elementor release renames any of this,
-	 * the option quietly stops working rather than throwing on every submission.
+	 * Elementor's multi-step handler binds submit -> resetForm(), and resetForm()
+	 * does two things: it re-hides the steps AND sets its internal currentStep to
+	 * zero. Undoing only the visible half is what the first version of this option
+	 * did, and it left Elementor believing it was on step one while the visitor was
+	 * looking at step three. The next goToStep() -- which is exactly what a failed
+	 * submission triggers -- then hid a step that was already hidden and revealed
+	 * another, showing two steps at once.
+	 *
+	 * The handler instance itself is out of reach: Elementor only keeps handler
+	 * instances in edit mode, so its state cannot be corrected from here. Removing
+	 * the handler is therefore the only way to keep Elementor's state and its DOM
+	 * telling the same story -- and it is the better fix anyway, because a reset
+	 * that never happens needs no undoing and cannot flicker.
+	 *
+	 * Identified by the method name in the bound function's source. Minifiers do
+	 * not rename class methods by default, so "resetForm" survives the build; if a
+	 * future version defeats that, this returns false and the caller falls back.
+	 *
+	 * Runs during the capture phase of the submit event, which is before any of the
+	 * form's own handlers, so the removal takes effect for this very submission.
+	 */
+	function detachStepReset( form ) {
+		if ( resetDetached.has( form ) ) {
+			return true;
+		}
+
+		var $ = window.jQuery;
+
+		// jQuery is guaranteed here in a way it is not at load time: Elementor's
+		// own form script is mid-submit, so it has certainly loaded.
+		if ( ! $ || ! $._data ) {
+			return false;
+		}
+
+		var events = $._data( form, 'events' );
+		var bound = events && events.submit;
+
+		if ( ! bound ) {
+			return false;
+		}
+
+		var detached = false;
+
+		bound.slice().forEach( function ( entry ) {
+			if ( entry.handler && String( entry.handler ).indexOf( 'resetForm' ) !== -1 ) {
+				$( form ).off( 'submit', entry.handler );
+				detached = true;
+			}
+		} );
+
+		if ( detached ) {
+			resetDetached.add( form );
+		}
+
+		return detached;
+	}
+
+	function syncIndicators( form, index, total ) {
+		form.querySelectorAll( STEP.indicator ).forEach( function ( indicator, i ) {
+			indicator.classList.remove( STEP.state + 'inactive', STEP.state + 'active', STEP.state + 'completed' );
+			indicator.classList.add( STEP.state + ( i < index ? 'completed' : ( i === index ? 'active' : 'inactive' ) ) );
+		} );
+
+		var meter = form.querySelector( STEP.meter );
+
+		if ( meter && total ) {
+			var percent = Math.ceil( ( ( index + 1 ) / total ) * 100 ) + '%';
+			meter.textContent = percent;
+
+			// Elementor sets the variable on the widget, not the form.
+			var widget = form.closest( '.elementor-widget-form' ) || form;
+			widget.style.setProperty( STEP.cssVar, percent );
+		}
+	}
+
+	/**
+	 * Fallback for when the reset could not be unhooked: put the step back.
 	 */
 	function restoreStep( form, index ) {
 		var steps = form.querySelectorAll( STEP.wrapper );
@@ -457,44 +542,63 @@
 			step.classList.toggle( STEP.hidden, i !== index );
 		} );
 
-		var indicators = form.querySelectorAll( STEP.indicator );
-
-		indicators.forEach( function ( indicator, i ) {
-			indicator.classList.remove( STEP.state + 'inactive', STEP.state + 'active', STEP.state + 'completed' );
-			indicator.classList.add( STEP.state + ( i < index ? 'completed' : ( i === index ? 'active' : 'inactive' ) ) );
-		} );
-
-		var meter = form.querySelector( STEP.meter );
-
-		if ( meter ) {
-			var percent = Math.ceil( ( ( index + 1 ) / steps.length ) * 100 ) + '%';
-			meter.textContent = percent;
-
-			// Elementor sets the variable on the widget, not the form.
-			var widget = form.closest( '.elementor-widget-form' ) || form;
-			widget.style.setProperty( STEP.cssVar, percent );
-		}
+		syncIndicators( form, index, steps.length );
 	}
 
 	/**
-	 * Elementor resets a multi-step form to step one on submit, then appends the
-	 * success message at the bottom. On a long form that leaves the visitor looking
-	 * at step one with no sign anything happened.
+	 * Guarantees a step form is never showing two steps at once.
 	 *
-	 * The reset cannot be prevented from outside Elementor, so it is undone -- and
-	 * the timing is the whole point. Waiting for the response would let the browser
-	 * paint step one first, which is the visible jump to the top and back. Instead
-	 * the step is noted in the capture phase and put back in the bubble phase of
-	 * the very same submit event, after Elementor's handlers on the form have run
-	 * but before the dispatch is over. No paint can happen inside a dispatch, so
-	 * step one is never shown.
-	 *
-	 * Only on success. A failed submission is left alone, because Elementor moves
-	 * to whichever step holds the invalid field and that is where the visitor needs
-	 * to be -- including when our own duplicate check is what rejected it. That
-	 * move happens when the response lands, well after this, so it wins.
+	 * Only ever acts when the form is already in a state no step form should be in,
+	 * so it cannot interfere with normal navigation. When a submission was rejected
+	 * the step holding the inline error wins, which is the one Elementor itself
+	 * would choose and the one the visitor has to see to fix anything.
 	 */
-	function watchForSuccess( form ) {
+	function normaliseSteps( form ) {
+		var steps = form.querySelectorAll( STEP.wrapper );
+
+		if ( steps.length < 2 ) {
+			return;
+		}
+
+		var shown = [];
+
+		steps.forEach( function ( step, i ) {
+			if ( ! step.classList.contains( STEP.hidden ) ) {
+				shown.push( i );
+			}
+		} );
+
+		if ( shown.length < 2 ) {
+			return;
+		}
+
+		var target = -1;
+		var errored = form.querySelector( STEP.inlineErr );
+		var owner = errored && errored.closest ? errored.closest( STEP.wrapper ) : null;
+
+		steps.forEach( function ( step, i ) {
+			if ( owner && step === owner ) {
+				target = i;
+			}
+		} );
+
+		if ( target < 0 ) {
+			target = shown[ shown.length - 1 ];
+		}
+
+		steps.forEach( function ( step, i ) {
+			step.classList.toggle( STEP.hidden, i !== target );
+		} );
+
+		syncIndicators( form, target, steps.length );
+	}
+
+	/**
+	 * Watches for Elementor's response landing: the success or error message, or an
+	 * inline field error. Used to run the safety net, and to apply the fallback
+	 * restore when the reset could not be unhooked.
+	 */
+	function watchResponse( form ) {
 		if ( watchedForms.has( form ) || ! window.MutationObserver ) {
 			return;
 		}
@@ -502,28 +606,32 @@
 		watchedForms.add( form );
 
 		new window.MutationObserver( function ( mutations ) {
+			var landed = false;
+
 			mutations.forEach( function ( mutation ) {
 				mutation.addedNodes.forEach( function ( node ) {
-					if ( ! node.classList || ! node.classList.contains( 'elementor-message-success' ) ) {
-						return;
+					if ( node.classList && node.classList.contains( 'elementor-message' ) ) {
+						landed = true;
 					}
-
-					var index = stepAtSubmit.get( form );
-
-					if ( index === undefined ) {
-						return;
-					}
-
-					stepAtSubmit.delete( form );
-
-					// Backstop. The bubble-phase handler below has almost certainly
-					// put the step back already, in which case this changes nothing;
-					// it only earns its keep if a future Elementor moves its own
-					// reset later than the submit event.
-					restoreStep( form, index );
 				} );
 			} );
-		} ).observe( form, { childList: true } );
+
+			if ( ! landed ) {
+				return;
+			}
+
+			var index = stepAtSubmit.get( form );
+
+			// Fallback path only, and only for a form that actually succeeded: a
+			// rejection belongs on Elementor's error step, not back where the
+			// visitor was.
+			if ( index !== undefined && form.querySelector( '.elementor-message-success' ) ) {
+				stepAtSubmit.delete( form );
+				restoreStep( form, index );
+			}
+
+			normaliseSteps( form );
+		} ).observe( form, { childList: true, subtree: true } );
 	}
 
 	document.addEventListener( 'submit', function ( event ) {
@@ -533,14 +641,20 @@
 			return;
 		}
 
+		watchResponse( form );
+
+		// Preferred: Elementor never resets the steps, so its state stays true and
+		// there is nothing to put back.
+		if ( detachStepReset( form ) ) {
+			stepAtSubmit.delete( form );
+			return;
+		}
+
 		stepAtSubmit.set( form, visibleStep( form ) );
-		watchForSuccess( form );
 	}, true );
 
-	// Bubble phase, on document rather than the form: the form's own listeners --
-	// Elementor's step reset among them -- have all run by the time an ancestor
-	// sees the event, and the dispatch is still in progress, so the step goes back
-	// before anything is drawn.
+	// Fallback only. Bubble phase on document, so the form's own handlers have all
+	// run and the dispatch is still open -- nothing is drawn in between.
 	document.addEventListener( 'submit', function ( event ) {
 		var form = event.target;
 
