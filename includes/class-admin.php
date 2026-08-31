@@ -10,7 +10,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Admin {
 
-	const NONCE = 'ebs_save_event';
+	const NONCE      = 'ebs_save_event';
+	const BULK_NONCE = 'ebs_bulk_bookings';
 
 	public static function init() {
 		add_action( 'add_meta_boxes', array( __CLASS__, 'add_meta_boxes' ) );
@@ -19,6 +20,7 @@ class Admin {
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue' ) );
 		add_action( 'admin_post_ebs_cancel_booking', array( __CLASS__, 'handle_cancel' ) );
 		add_action( 'admin_post_ebs_delete_booking', array( __CLASS__, 'handle_delete' ) );
+		add_action( 'admin_post_ebs_bulk_bookings', array( __CLASS__, 'handle_bulk' ) );
 		add_action( 'admin_post_ebs_export', array( __CLASS__, 'handle_export' ) );
 		add_action( 'admin_notices', array( __CLASS__, 'show_parse_notice' ) );
 
@@ -50,10 +52,26 @@ class Admin {
 
 			wp_localize_script(
 				'ebs-admin-bookings',
-				'ebsBookingsI18n',
+				'ebsBookings',
 				array(
-					'cancel' => __( 'Cancel this booking and free the seat?', 'event-booking-slots' ),
-					'delete' => __( 'Delete this booking permanently? The seat is freed and the record cannot be recovered.', 'event-booking-slots' ),
+					'endpoint' => esc_url_raw( rest_url( Admin_Rest::NAMESPACE_V1 . '/bookings/bulk' ) ),
+					'nonce'    => wp_create_nonce( 'wp_rest' ),
+					'i18n'     => array(
+						'cancel'        => __( 'Cancel this booking and free the seat?', 'event-booking-slots' ),
+						'delete'        => __( 'Delete this booking permanently? The seat is freed and the record cannot be recovered.', 'event-booking-slots' ),
+						/* translators: %s: number of bookings. */
+						'bulkCancel'    => __( 'Cancel %s bookings and free their seats?', 'event-booking-slots' ),
+						/* translators: %s: number of bookings. */
+						'bulkDelete'    => __( 'Delete %s bookings permanently? Their seats are freed and the records cannot be recovered.', 'event-booking-slots' ),
+						'chooseAction'  => __( 'Choose an action first.', 'event-booking-slots' ),
+						'chooseRows'    => __( 'Select at least one booking first.', 'event-booking-slots' ),
+						/* translators: %s: number of bookings. */
+						'selected'      => __( '%s selected', 'event-booking-slots' ),
+						'working'       => __( 'Working…', 'event-booking-slots' ),
+						'failed'        => __( 'That did not work. Nothing was changed — reload the page and try again.', 'event-booking-slots' ),
+						'cancelledPill' => __( 'Cancelled', 'event-booking-slots' ),
+						'noBookings'    => __( 'No bookings found.', 'event-booking-slots' ),
+					),
 				)
 			);
 		}
@@ -590,9 +608,38 @@ class Admin {
 				</p>
 			</form>
 
-			<table class="widefat striped">
+			<div class="ebs-bulk-notice notice" role="status" aria-live="polite" hidden><p></p></div>
+
+			<?php
+			// Posts to admin-post.php so bulk actions still work with no JavaScript.
+			// The script below intercepts the submit and uses the REST route instead,
+			// which is the same work without redrawing the page.
+			?>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="ebs-bookings-form">
+				<input type="hidden" name="action" value="ebs_bulk_bookings" />
+				<input type="hidden" name="redirect_to" value="<?php echo esc_attr( self::current_url() ); ?>" />
+				<?php wp_nonce_field( self::BULK_NONCE ); ?>
+
+			<div class="tablenav top">
+				<div class="alignleft actions bulkactions">
+					<label for="ebs-bulk-action" class="screen-reader-text"><?php esc_html_e( 'Bulk action', 'event-booking-slots' ); ?></label>
+					<select name="bulk_action" id="ebs-bulk-action">
+						<option value=""><?php esc_html_e( 'Bulk actions', 'event-booking-slots' ); ?></option>
+						<option value="cancel"><?php esc_html_e( 'Cancel', 'event-booking-slots' ); ?></option>
+						<option value="delete"><?php esc_html_e( 'Delete permanently', 'event-booking-slots' ); ?></option>
+					</select>
+					<button type="submit" class="button action ebs-bulk-apply"><?php esc_html_e( 'Apply', 'event-booking-slots' ); ?></button>
+					<span class="ebs-bulk-count" aria-live="polite"></span>
+				</div>
+			</div>
+
+			<table class="widefat striped ebs-bookings-table">
 				<thead>
 					<tr>
+						<td class="manage-column column-cb check-column">
+							<label class="screen-reader-text" for="ebs-select-all"><?php esc_html_e( 'Select all bookings', 'event-booking-slots' ); ?></label>
+							<input type="checkbox" id="ebs-select-all" />
+						</td>
 						<th><?php esc_html_e( 'When', 'event-booking-slots' ); ?></th>
 						<th><?php esc_html_e( 'Event', 'event-booking-slots' ); ?></th>
 						<th><?php esc_html_e( 'Name', 'event-booking-slots' ); ?></th>
@@ -605,16 +652,28 @@ class Admin {
 				</thead>
 				<tbody>
 				<?php if ( empty( $result['items'] ) ) : ?>
-					<tr><td colspan="8"><?php esc_html_e( 'No bookings found.', 'event-booking-slots' ); ?></td></tr>
+					<tr class="ebs-no-bookings"><td colspan="9"><?php esc_html_e( 'No bookings found.', 'event-booking-slots' ); ?></td></tr>
 				<?php else : ?>
 					<?php foreach ( $result['items'] as $booking ) : ?>
-						<tr>
+						<tr data-ebs-booking="<?php echo esc_attr( $booking->id ); ?>">
+							<th scope="row" class="check-column">
+								<label class="screen-reader-text" for="ebs-cb-<?php echo esc_attr( $booking->id ); ?>">
+									<?php
+									printf(
+										/* translators: %s: the person's name. */
+										esc_html__( 'Select the booking for %s', 'event-booking-slots' ),
+										esc_html( '' !== $booking->name ? $booking->name : $booking->email )
+									);
+									?>
+								</label>
+								<input type="checkbox" id="ebs-cb-<?php echo esc_attr( $booking->id ); ?>" class="ebs-cb" name="booking_ids[]" value="<?php echo esc_attr( $booking->id ); ?>" />
+							</th>
 							<td><strong><?php echo esc_html( $booking->slot_date ) . ' ' . wp_kses_post( Slot_Repository::time_range_html( $booking ) ); ?></strong></td>
 							<td><?php echo esc_html( get_the_title( $booking->event_id ) ); ?></td>
 							<td><?php echo esc_html( $booking->name ); ?></td>
 							<td><?php echo esc_html( $booking->email ); ?></td>
 							<td><?php echo esc_html( $booking->phone ); ?></td>
-							<td>
+							<td data-ebs-cell="status">
 								<?php if ( 'cancelled' === $booking->status ) : ?>
 									<span class="ebs-pill ebs-pill-closed"><?php esc_html_e( 'Cancelled', 'event-booking-slots' ); ?></span>
 								<?php else : ?>
@@ -622,17 +681,18 @@ class Admin {
 								<?php endif; ?>
 							</td>
 							<td><?php echo esc_html( $booking->created_at ); ?></td>
-							<td>
+							<td data-ebs-cell="actions">
 								<?php if ( 'cancelled' !== $booking->status ) : ?>
-									<a class="button button-small" data-ebs-confirm="cancel" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=ebs_cancel_booking&booking_id=' . $booking->id ), 'ebs_cancel_' . $booking->id ) ); ?>"><?php esc_html_e( 'Cancel', 'event-booking-slots' ); ?></a>
+									<a class="button button-small" data-ebs-confirm="cancel" data-ebs-action="cancel" data-ebs-id="<?php echo esc_attr( $booking->id ); ?>" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=ebs_cancel_booking&booking_id=' . $booking->id ), 'ebs_cancel_' . $booking->id ) ); ?>"><?php esc_html_e( 'Cancel', 'event-booking-slots' ); ?></a>
 								<?php endif; ?>
-								<a class="button button-small ebs-delete" data-ebs-confirm="delete" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=ebs_delete_booking&booking_id=' . $booking->id ), 'ebs_delete_' . $booking->id ) ); ?>"><?php esc_html_e( 'Delete', 'event-booking-slots' ); ?></a>
+								<a class="button button-small ebs-delete" data-ebs-confirm="delete" data-ebs-action="delete" data-ebs-id="<?php echo esc_attr( $booking->id ); ?>" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=ebs_delete_booking&booking_id=' . $booking->id ), 'ebs_delete_' . $booking->id ) ); ?>"><?php esc_html_e( 'Delete', 'event-booking-slots' ); ?></a>
 							</td>
 						</tr>
 					<?php endforeach; ?>
 				<?php endif; ?>
 				</tbody>
 			</table>
+			</form>
 
 			<?php
 			$pages = (int) ceil( $result['total'] / $per_page );
@@ -691,12 +751,74 @@ class Admin {
 	}
 
 	/**
+	 * Bulk cancel or delete without JavaScript.
+	 *
+	 * The screen normally does this through the REST route so the page does not
+	 * have to be redrawn, but the form posts here so the feature still works when
+	 * the script is blocked, delayed or has failed.
+	 */
+	public static function handle_bulk() {
+		check_admin_referer( self::BULK_NONCE );
+
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_die( esc_html__( 'You are not allowed to change bookings.', 'event-booking-slots' ) );
+		}
+
+		$action = isset( $_POST['bulk_action'] ) ? sanitize_key( wp_unslash( $_POST['bulk_action'] ) ) : '';
+		$ids    = isset( $_POST['booking_ids'] ) ? (array) wp_unslash( $_POST['booking_ids'] ) : array();
+		$ids    = array_values( array_unique( array_filter( array_map( 'absint', $ids ) ) ) );
+
+		if ( in_array( $action, array( 'cancel', 'delete' ), true ) && $ids ) {
+			// The same ceiling the REST route applies, for the same reason.
+			$ids = array_slice( $ids, 0, Admin_Rest::MAX_PER_REQUEST );
+
+			foreach ( $ids as $id ) {
+				if ( 'delete' === $action ) {
+					Booking_Repository::delete( $id );
+					continue;
+				}
+
+				Booking_Repository::cancel( $id );
+			}
+		}
+
+		self::redirect_back();
+	}
+
+	/**
+	 * This screen's own URL, filters and page number included, for a form to
+	 * return to once it has posted elsewhere.
+	 */
+	private static function current_url() {
+		$url = admin_url( 'edit.php?post_type=' . Event_Post_Type::POST_TYPE . '&page=ebs-bookings' );
+
+		foreach ( array( 'event_id', 'slot_id', 'paged' ) as $key ) {
+			if ( ! empty( $_GET[ $key ] ) ) {
+				$url = add_query_arg( $key, absint( $_GET[ $key ] ), $url );
+			}
+		}
+
+		if ( ! empty( $_GET['s'] ) ) {
+			$url = add_query_arg( 's', rawurlencode( sanitize_text_field( wp_unslash( $_GET['s'] ) ) ), $url );
+		}
+
+		return $url;
+	}
+
+	/**
 	 * Back to the list the action was started from, keeping its filters and page.
 	 */
 	private static function redirect_back() {
-		$referer = wp_get_referer();
+		// The bulk form carries the list's own URL, because a POST's referer is the
+		// screen it came from but the row links have no such field. wp_safe_redirect
+		// refuses anything off-site either way.
+		$target = isset( $_POST['redirect_to'] ) ? esc_url_raw( wp_unslash( $_POST['redirect_to'] ) ) : '';
 
-		wp_safe_redirect( $referer ? $referer : admin_url( 'edit.php?post_type=' . Event_Post_Type::POST_TYPE . '&page=ebs-bookings' ) );
+		if ( '' === $target ) {
+			$target = wp_get_referer();
+		}
+
+		wp_safe_redirect( $target ? $target : admin_url( 'edit.php?post_type=' . Event_Post_Type::POST_TYPE . '&page=ebs-bookings' ) );
 		exit;
 	}
 

@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Event Booking Slots
  * Description:       Event days with capped time slots, exposed to Elementor Forms as a custom "Booking Slot" field.
- * Version:           0.4.3
+ * Version:           0.5.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            OTW Design
@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'EBS_VERSION', '0.4.3' );
+define( 'EBS_VERSION', '0.5.0' );
 define( 'EBS_FILE', __FILE__ );
 define( 'EBS_PATH', plugin_dir_path( __FILE__ ) );
 define( 'EBS_URL', plugin_dir_url( __FILE__ ) );
@@ -28,6 +28,7 @@ require_once EBS_PATH . 'includes/class-duplicate-guard.php';
 require_once EBS_PATH . 'includes/class-event-post-type.php';
 require_once EBS_PATH . 'includes/class-admin.php';
 require_once EBS_PATH . 'includes/class-rest-controller.php';
+require_once EBS_PATH . 'includes/class-admin-rest.php';
 require_once EBS_PATH . 'includes/class-plugin.php';
 
 // Optional read-only diagnostics screen; simply delete the file to remove it.

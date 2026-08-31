@@ -3,7 +3,7 @@ Contributors: yarikkanonirov
 Requires at least: 6.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 0.4.3
+Stable tag: 0.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -24,7 +24,8 @@ for the last seat cannot both win it.
 * A "Booking Events" post type with a calendar editor for dates, times and capacities.
 * A "Booking Slot" field for Elementor Pro forms, with options to hide the radio
   circle and to leave the form filled in after sending.
-* A bookings list with search, per-event filtering, CSV export, and cancel/delete.
+* A bookings list with search, per-event filtering, CSV export, and cancel/delete,
+  singly or as a bulk selection, without reloading the page.
 * Duplicate protection: block a second booking from the same email or phone number.
 
 = Duplicate bookings =
@@ -51,6 +52,18 @@ that rule with the `ebs_normalize_phone` filter, before any bookings exist.
 * `ebs_booking_cancelled` — a booking was cancelled and its seats returned.
 * `ebs_booking_deleted` — a booking row was removed and its seats returned.
 * `ebs_duplicate_rejected` — a submission was turned away as a duplicate.
+
+== Managing bookings ==
+
+Rows can be cancelled or deleted one at a time, or several at once by ticking them and
+choosing a bulk action. Either way the work is done through an authenticated REST route
+and the table is updated in place, so a long list is not reloaded for every row.
+
+A single request will not touch more than 200 bookings; select fewer at a time and the
+screen says so rather than silently doing part of the job.
+
+Both actions still work without JavaScript, through admin-post.php, in which case the
+page does reload.
 
 == Cancelling versus deleting ==
 
@@ -93,6 +106,15 @@ but it is still not the real availability. Check your local consumer-protection 
 before switching it on.
 
 == Changelog ==
+
+= 0.5.0 =
+* Cancelling and deleting a booking no longer reload the bookings list. The row is
+  updated in place, which on a long list is the difference between a click and a
+  full page load each time.
+* Added bulk selection: tick any number of rows, or the header box for all of them,
+  and cancel or delete the lot in one request. Shift-click takes a range.
+* Both still work with JavaScript unavailable: the row links keep their real URLs
+  and the bulk form posts to admin-post.php as before.
 
 = 0.4.3 =
 * The duplicate message is now shown as a full-width notice below the chosen date
@@ -147,6 +169,9 @@ before switching it on.
 * Slot end times, scarcity display, and the multi-step summary.
 
 == Upgrade Notice ==
+
+= 0.5.0 =
+Adds bulk actions to the bookings list. No database changes.
 
 = 0.4.3 =
 Presentation only, no database changes. Clear any page cache after upgrading.

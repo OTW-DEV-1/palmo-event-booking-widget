@@ -27,6 +27,7 @@ class Plugin {
 		add_action( 'init', array( '\EBS\Event_Post_Type', 'register' ) );
 		add_action( 'before_delete_post', array( '\EBS\Event_Post_Type', 'on_delete' ) );
 		add_action( 'rest_api_init', array( '\EBS\Rest_Controller', 'register_routes' ) );
+		add_action( 'rest_api_init', array( '\EBS\Admin_Rest', 'register_routes' ) );
 
 		if ( is_admin() ) {
 			Admin::init();

@@ -324,3 +324,33 @@
 	background: #b32d2e;
 	border-color: #b32d2e;
 }
+
+/* --- Bookings list: bulk actions ---------------------------------------- */
+
+.ebs-bulk-notice {
+	margin: 12px 0;
+}
+
+.ebs-bulk-count {
+	margin-inline-start: 8px;
+	color: #646970;
+	line-height: 30px;
+	vertical-align: middle;
+}
+
+/* While a request is in flight, so a second Apply cannot be started on top of
+   the first. The script also guards this, but the pointer should agree. */
+.ebs-bookings-form.ebs-is-busy {
+	opacity: .6;
+	pointer-events: none;
+}
+
+.ebs-bookings-table .check-column {
+	width: 2.2em;
+	padding: 8px 0 8px 3px;
+	vertical-align: middle;
+}
+
+.ebs-bookings-table thead .check-column {
+	padding-top: 10px;
+}
